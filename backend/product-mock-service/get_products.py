@@ -5,12 +5,18 @@ import boto3
 
 from aws_lambda_powertools import Logger, Tracer
 from boto3.dynamodb.conditions import Key
+from collections.abc import Mapping, Iterable
+from decimal import Decimal
 
-class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, decimal.Decimal):
-            return float(o)
-        return super(CustomJSONEncoder, self).default(o)
+class DecimalEncoder(json.JSONEncoder):
+    def encode(self, obj):
+        if isinstance(obj, Mapping):
+            return '{' + ', '.join(f'{self.encode(k)}: {self.encode(v)}' for (k, v) in obj.items()) + '}'
+        if isinstance(obj, Iterable) and (not isinstance(obj, str)):
+            return '[' + ', '.join(map(self.encode, obj)) + ']'
+        if isinstance(obj, Decimal):
+            return f'{obj.normalize():f}'  # using normalize() gets rid of trailing 0s, using ':f' prevents scientific notation
+        return super().encode(obj)
 
 logger = Logger()
 tracer = Tracer()
@@ -31,7 +37,7 @@ while 'LastEvaluatedKey' in response:
     response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
     items.extend(response['Items'])
     
-product_list = json.dumps(items, cls=CustomJSONEncoder)
+product_list = json.dumps(items, cls=DecimalEncoder)
 
 HEADERS = {
     "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN"),
