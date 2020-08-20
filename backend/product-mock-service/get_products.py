@@ -24,7 +24,7 @@ table = dynamodb.Table("products")
 logger.info("Fetching Products from DB")
 response = table.scan()
     
-product_list = json.dumps(response['Items'], cs=DecimalEncoder)
+product_list = json.dumps(response['Items'], cls=DecimalEncoder)
 
 HEADERS = {
     "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN"),
