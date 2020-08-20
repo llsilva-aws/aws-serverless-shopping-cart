@@ -25,7 +25,7 @@ logger.info("Fetching Products from DB")
 response = table.scan()
 items = response['Items']
 
-logger.info("Products in the table: " + len(response['Items']))
+logger.info("Products in the table: " + str(len(response['Items'])))
 
 while 'LastEvaluatedKey' in response:
     response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
