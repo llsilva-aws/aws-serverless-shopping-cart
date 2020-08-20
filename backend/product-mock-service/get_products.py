@@ -6,11 +6,11 @@ import boto3
 from aws_lambda_powertools import Logger, Tracer
 from boto3.dynamodb.conditions import Key
 
-class DecimalEncoder(json.JSONEncoder):
-    def default(self, obj):
+class MyEncoder(json.JSONEncoder):
+    def encode(self, obj):
         if isinstance(obj, decimal.Decimal):
             return float(obj)
-        return json.JSONEncoder.default(self, obj)
+        return json.JSONEncoder.encode(self, obj)
 
 logger = Logger()
 tracer = Tracer()
@@ -23,8 +23,15 @@ table = dynamodb.Table("products")
 """
 logger.info("Fetching Products from DB")
 response = table.scan()
+items = response['Items']
+
+logger.info("Products in the table: " + len(response['Items']))
+
+while 'LastEvaluatedKey' in response:
+    response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+    items.extend(response['Items'])
     
-product_list = json.dumps(response['Items'], cls=DecimalEncoder)
+product_list = json.dumps(items, cls=MyEncoder)
 
 HEADERS = {
     "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN"),
