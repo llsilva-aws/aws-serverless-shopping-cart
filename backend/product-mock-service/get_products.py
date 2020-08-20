@@ -1,13 +1,22 @@
 import json
 import os
+import boto3
 
 from aws_lambda_powertools import Logger, Tracer
+from boto3.dynamodb.conditions import Key
 
 logger = Logger()
 tracer = Tracer()
 
-with open('product_list.json', 'r') as product_list:
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table("products")
+
+"""with open('product_list.json', 'r') as product_list:
     product_list = json.load(product_list)
+"""
+logger.info("Fetching Products from DB")
+response = table.scan()
+product_list = json.load(response.get('Items', []))
 
 HEADERS = {
     "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN"),
