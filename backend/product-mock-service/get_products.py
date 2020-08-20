@@ -5,6 +5,13 @@ import boto3
 from aws_lambda_powertools import Logger, Tracer
 from boto3.dynamodb.conditions import Key
 
+from decimal import Decimal
+
+def default(obj):
+    if isinstance(obj, Decimal):
+        return str(obj)
+    raise TypeError("Object of type '%s' is not JSON serializable" % type(obj).__name__)
+
 logger = Logger()
 tracer = Tracer()
 
@@ -16,7 +23,7 @@ table = dynamodb.Table("products")
 """
 logger.info("Fetching Products from DB")
 response = table.scan()
-product_list = json.dumps(response['Items'])
+product_list = json.dumps(response['Items'], default=default)
 
 HEADERS = {
     "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN"),
