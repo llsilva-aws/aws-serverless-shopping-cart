@@ -7,16 +7,7 @@ from aws_lambda_powertools import Logger, Tracer
 from boto3.dynamodb.conditions import Key
 from collections.abc import Mapping, Iterable
 from decimal import Decimal
-
-class DecimalEncoder(json.JSONEncoder):
-    def encode(self, obj):
-        if isinstance(obj, Mapping):
-            return '{' + ', '.join(f'{self.encode(k)}: {self.encode(v)}' for (k, v) in obj.items()) + '}'
-        if isinstance(obj, Iterable) and (not isinstance(obj, str)):
-            return '[' + ', '.join(map(self.encode, obj)) + ']'
-        if isinstance(obj, Decimal):
-            return f'{obj.normalize():f}'  # using normalize() gets rid of trailing 0s, using ':f' prevents scientific notation
-        return super().encode(obj)
+from shared import handle_decimal_type
 
 logger = Logger()
 tracer = Tracer()
@@ -47,12 +38,12 @@ def lambda_handler(event, context):
 
     while 'LastEvaluatedKey' in response:
         response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-        items.extend(response['Items'])
-    
-    product_list = json.dumps(items, cls=DecimalEncoder)
+        items.extend(response.get("Items", []))
+
+    logger.info("Products in the response: " + str(len(items)))
 
     return {
         "statusCode": 200,
         "headers": HEADERS,
-        "body": json.dumps({"products": product_list}),
+        "body": json.dumps({"products": items}, default=handle_decimal_type),
     }
