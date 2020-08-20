@@ -3,11 +3,20 @@ import os
 import decimal
 import boto3
 
+from decimal import Decimal
 from aws_lambda_powertools import Logger, Tracer
 from boto3.dynamodb.conditions import Key
-from collections.abc import Mapping, Iterable
-from decimal import Decimal
-from shared import handle_decimal_type
+
+def handle_decimal_type(obj):
+    """
+    json serializer which works with Decimal types returned from DynamoDB.
+    """
+    if isinstance(obj, Decimal):
+        if float(obj).is_integer():
+            return int(obj)
+        else:
+            return float(obj)
+    raise TypeError
 
 logger = Logger()
 tracer = Tracer()
