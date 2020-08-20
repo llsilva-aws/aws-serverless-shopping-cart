@@ -1,4 +1,4 @@
-import json
+import simplejson
 import os
 import boto3
 
@@ -23,7 +23,8 @@ table = dynamodb.Table("products")
 """
 logger.info("Fetching Products from DB")
 response = table.scan()
-product_list = json.dumps(response['Items'], default=default)
+    
+product_list = simplejson.dumps(response['Items'])
 
 HEADERS = {
     "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN"),
